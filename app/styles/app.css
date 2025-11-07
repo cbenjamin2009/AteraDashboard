@@ -1,0 +1,235 @@
+:root {
+  font-family: "Segoe UI", "Inter", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  color: #f3f4f6;
+  background-color: #05090f;
+  line-height: 1.5;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, rgba(37, 99, 235, 0.3), transparent 45%),
+    radial-gradient(circle at 20% 20%, rgba(16, 185, 129, 0.25), transparent 35%),
+    #05090f;
+  min-height: 100vh;
+}
+
+main {
+  padding: 2.5rem 4vw 3rem;
+}
+
+.dashboard-shell {
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+header h1 {
+  margin: 0;
+  font-size: clamp(2rem, 3vw, 3.5rem);
+  font-weight: 700;
+}
+
+header p {
+  color: #94a3b8;
+  margin: 0.3rem 0 0;
+}
+
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 1.25rem;
+}
+
+.metric-card {
+  position: relative;
+  padding: 1.5rem;
+  border-radius: 1rem;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 20px 35px rgba(2, 6, 23, 0.4);
+}
+
+.metric-card h3 {
+  margin: 0;
+  font-size: 0.95rem;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #94a3b8;
+}
+
+.metric-card .value {
+  font-size: 3rem;
+  font-weight: 700;
+  margin: 0.4rem 0 0.3rem;
+}
+
+.metric-card .meta {
+  color: #cbd5f5;
+  font-size: 0.95rem;
+}
+
+.metric-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.4), rgba(16, 185, 129, 0.3));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+}
+
+.metric-card[data-accent="warning"]::after {
+  background: linear-gradient(135deg, rgba(234, 179, 8, 0.9), rgba(249, 115, 22, 0.65));
+}
+
+.metric-card[data-accent="success"]::after {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.9), rgba(34, 197, 94, 0.7));
+}
+
+.metric-card[data-accent="neutral"]::after {
+  background: linear-gradient(135deg, rgba(148, 163, 184, 0.75), rgba(100, 116, 139, 0.5));
+}
+
+.tickets-panel {
+  background: rgba(15, 23, 42, 0.9);
+  border-radius: 1.25rem;
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  padding: 1.75rem;
+  box-shadow: 0 25px 45px rgba(2, 6, 23, 0.55);
+}
+
+.tickets-panel h2 {
+  margin: 0 0 1rem;
+  font-size: 1.5rem;
+}
+
+.tickets-panel table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tickets-panel th,
+.tickets-panel td {
+  padding: 0.65rem;
+  text-align: left;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.tickets-panel th {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.tickets-panel tbody tr:hover {
+  background: rgba(51, 65, 85, 0.25);
+}
+
+.panels-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+}
+
+.stat-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.stat-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.stat-list li:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.stat-list strong {
+  font-size: 1.25rem;
+}
+
+.stat-list.compact strong {
+  font-size: 1.1rem;
+}
+
+.list-label {
+  font-weight: 600;
+}
+
+.list-sub,
+.list-meta {
+  display: block;
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.list-meta {
+  min-width: 60px;
+  text-align: right;
+}
+
+.trend-table td,
+.trend-table th {
+  text-align: left;
+}
+
+.status-pill {
+  display: inline-flex;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.status-pill[data-variant="open"] {
+  background: rgba(59, 130, 246, 0.15);
+  color: #60a5fa;
+}
+
+.status-pill[data-variant="new"] {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+.footer-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  font-size: 0.9rem;
+  color: #94a3b8;
+}
+
+@media (max-width: 640px) {
+  main {
+    padding: 1.5rem;
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .tickets-panel {
+    padding: 1.25rem;
+    overflow-x: auto;
+  }
+}
