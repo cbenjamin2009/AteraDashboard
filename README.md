@@ -9,7 +9,11 @@ A local-first Remix dashboard tailored for wall displays and NOC TVs. It surface
 - Technician workload list, status breakdown, 7-day opened vs closed trend (with spark bars), customer volume leaderboard, and the oldest-open ticket table keep priorities obvious.
 - Auto-refresh interval, stale-data warning, and closed/pending keyword lists are configurable via `.env`.
 - Status banners surface refresh progress or stale data so you know when the API is unhappy.
-- Zero external services—run and host anywhere Node 18+ is available.
+- Zero external servicesâ€”run and host anywhere Node 18+ is available.
+
+## Screenshot
+<img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/04d1a72b-9cff-4a0e-9337-91ee41c4bc7a" />
+
 
 ## Getting Started
 
@@ -38,10 +42,10 @@ npm run start:prod
 
 - **API access**: The app uses the `/api/v3/tickets`, `/api/v3/tickets/lastmodified`, and `/api/v3/alerts` endpoints with the `X-API-KEY` header described in the [Atera API docs](https://support.atera.com/hc/en-us/articles/219083397-APIs).
 - **Environment variables**:
-  - `ATERA_API_KEY` *(required)* – your tenant key.
-  - `DASH_REFRESH_INTERVAL_MS` – client auto-refresh cadence (default `60000`).
-  - `DASH_STALE_AFTER_MS` – when to banner stale data (default `300000`).
-  - `DASH_PENDING_KEYWORDS` / `DASH_CLOSED_KEYWORDS` – comma lists that control which ticket statuses roll into the pending and open buckets.
+  - `ATERA_API_KEY` *(required)* â€“ your tenant key.
+  - `DASH_REFRESH_INTERVAL_MS` â€“ client auto-refresh cadence (default `60000`).
+  - `DASH_STALE_AFTER_MS` â€“ when to banner stale data (default `300000`).
+  - `DASH_PENDING_KEYWORDS` / `DASH_CLOSED_KEYWORDS` â€“ comma lists that control which ticket statuses roll into the pending and open buckets.
 - **Caching**: `app/utils/atera.server.ts` includes a small memory cache (30s TTL) to shield the API from rapid refreshes. Adjust the constants there if you need faster/slower polling or higher page limits.
 - **Deployment helpers**: Use the included `Procfile` on Heroku-style hosts or point PM2/systemd at `npm run start:prod`.
 
