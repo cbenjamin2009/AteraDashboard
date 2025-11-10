@@ -288,7 +288,7 @@ header p {
   color: #34d399;
 }
 
-.footer-meta {
+.meta-row {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
@@ -310,3 +310,4 @@ header p {
     overflow-x: auto;
   }
 }
+
