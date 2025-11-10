@@ -42,6 +42,7 @@ export interface DashboardMetrics {
   openThisMonth: number;
   newToday: number;
   closedThisMonth: number;
+  pendingTickets: number;
   averageOpenAgeHours: number;
   slaRiskCount: number;
   technicianLoad: TechnicianWorkload[];

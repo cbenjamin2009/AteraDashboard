@@ -104,6 +104,12 @@ export default function DashboardRoute() {
             accent="success"
           />
           <MetricCard
+            label="Pending Tickets"
+            value={metrics.pendingTickets}
+            helper="Waiting on external action"
+            accent="warning"
+          />
+          <MetricCard
             label="Closed This Month"
             value={metrics.closedThisMonth}
             helper="Resolved + closed"

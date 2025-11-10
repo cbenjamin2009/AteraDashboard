@@ -5,7 +5,7 @@ A local-first Remix dashboard tailored for wall displays and NOC TVs. It surface
 ## Features
 
 - Server-side loaders keep your `ATERA_API_KEY` off the client.
-- KPI cards cover open totals, opened/closed this month, new today, average open age (30d), SLA-at-risk counts, and live critical alert totals.
+- KPI cards cover open totals, opened/closed this month, new today, pending queue, average open age (30d), SLA-at-risk counts, and live critical alert totals.
 - Technician workload list, status breakdown, 7-day opened vs closed trend, customer volume leaderboard, and the oldest-open ticket table keep priorities obvious.
 - Auto-refresh every 60 seconds plus lightweight in-memory caching to avoid hammering the API.
 - Zero external services—run and host anywhere Node 18+ is available.

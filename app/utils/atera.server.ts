@@ -16,6 +16,17 @@ const PAGE_SIZE = 50;
 const MAX_PAGES = 40;
 const DEFAULT_TTL_MS = 30_000;
 const SLA_THRESHOLD_HOURS = 4;
+const CLOSED_STATUS_KEYWORDS = ["closed", "resolved", "merged", "deleted", "spam", "cancelled"];
+const PENDING_STATUS_KEYWORDS = [
+  "pending",
+  "uptime",
+  "waiting",
+  "waiting on user",
+  "waiting on customer",
+  "in-progress",
+  "closure pending",
+  "internal escalation"
+];
 
 interface TicketsPage<T> {
   items: T[];
@@ -203,6 +214,12 @@ function parseDate(value?: string) {
   return Number.isNaN(parsed.valueOf()) ? null : parsed;
 }
 
+function isClosedStatus(status?: string) {
+  if (!status) return false;
+  const normalized = status.toLowerCase();
+  return CLOSED_STATUS_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
 function buildTechnicianLoad(tickets: TicketRecord[]): TechnicianWorkload[] {
   const load = new Map<string, number>();
   for (const ticket of tickets) {
@@ -260,8 +277,7 @@ function buildStatusBreakdown(tickets: TicketRecord[]): TicketStatusSummary[] {
   const map = new Map<string, number>();
   for (const ticket of tickets) {
     const status = ticket.TicketStatus?.trim() || "Unknown";
-    const normalized = status.toLowerCase();
-    if (normalized.includes("closed") || normalized.includes("resolved")) {
+    if (isClosedStatus(status)) {
       continue;
     }
     map.set(status, (map.get(status) ?? 0) + 1);
@@ -272,16 +288,24 @@ function buildStatusBreakdown(tickets: TicketRecord[]): TicketStatusSummary[] {
     .sort((a, b) => b.count - a.count);
 }
 
+function countPendingTickets(tickets: TicketRecord[]): number {
+  return tickets.filter((ticket) => {
+    const status = ticket.TicketStatus?.toLowerCase();
+    if (!status) return false;
+    return PENDING_STATUS_KEYWORDS.some((keyword) => status.includes(keyword));
+  }).length;
+}
+
 export async function getDashboardMetrics(now = new Date()): Promise<DashboardMetrics> {
   const todayStart = startOfDay(now);
   const monthStart = startOfMonth(now);
   const sevenDaysAgo = subDays(todayStart, 7);
   const thirtyDaysAgo = subDays(todayStart, 30);
 
-  const [openTickets, modifiedToday, modifiedThisMonth, openAlerts] = await Promise.all([
+  const [allTickets, modifiedToday, modifiedThisMonth, openAlerts] = await Promise.all([
     fetchTicketsCollection(
       "/tickets",
-      { ticketStatus: "Open" },
+      {},
       { cacheKey: "tickets:open", ttlMs: DEFAULT_TTL_MS }
     ),
     fetchTicketsCollection(
@@ -307,6 +331,12 @@ export async function getDashboardMetrics(now = new Date()): Promise<DashboardMe
       { cacheKey: "alerts:open", ttlMs: DEFAULT_TTL_MS, pageSize: 100 }
     )
   ]);
+
+  const openTickets: TicketsCollection = {
+    items: allTickets.items.filter((ticket) => !isClosedStatus(ticket.TicketStatus)),
+    totalItemCount: 0
+  };
+  openTickets.totalItemCount = openTickets.items.length;
 
   const newToday = modifiedToday.items.filter((ticket) => {
     const created = parseDate(ticket.TicketCreatedDate);
@@ -360,6 +390,7 @@ export async function getDashboardMetrics(now = new Date()): Promise<DashboardMe
   const trendSevenDay = buildTrend(modifiedThisMonth.items, subDays(todayStart, 6), 7);
   const newTicketsByCustomer = buildCustomerLoads(modifiedThisMonth.items, sevenDaysAgo);
   const statusBreakdown = buildStatusBreakdown(openTickets.items);
+  const pendingTickets = countPendingTickets(openTickets.items);
 
   const criticalAlerts = openAlerts.items
     .filter((alert) => (alert.Severity ?? "").toLowerCase() === "critical")
@@ -375,6 +406,7 @@ export async function getDashboardMetrics(now = new Date()): Promise<DashboardMe
     newToday,
     openThisMonth,
     closedThisMonth,
+    pendingTickets,
     averageOpenAgeHours,
     slaRiskCount,
     technicianLoad,
