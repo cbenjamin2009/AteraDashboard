@@ -16,8 +16,9 @@ const PAGE_SIZE = 50;
 const MAX_PAGES = 40;
 const DEFAULT_TTL_MS = 30_000;
 const SLA_THRESHOLD_HOURS = 4;
-const CLOSED_STATUS_KEYWORDS = ["closed", "resolved", "merged", "deleted", "spam", "cancelled"];
-const PENDING_STATUS_KEYWORDS = [
+
+const DEFAULT_CLOSED_STATUS_KEYWORDS = ["closed", "resolved", "merged", "deleted", "spam", "cancelled"];
+const DEFAULT_PENDING_STATUS_KEYWORDS = [
   "pending",
   "uptime",
   "waiting",
@@ -27,6 +28,9 @@ const PENDING_STATUS_KEYWORDS = [
   "closure pending",
   "internal escalation"
 ];
+
+const CLOSED_STATUS_KEYWORDS = makeKeywordList(process.env.DASH_CLOSED_KEYWORDS, DEFAULT_CLOSED_STATUS_KEYWORDS);
+const PENDING_STATUS_KEYWORDS = makeKeywordList(process.env.DASH_PENDING_KEYWORDS, DEFAULT_PENDING_STATUS_KEYWORDS);
 
 interface TicketsPage<T> {
   items: T[];
@@ -91,6 +95,15 @@ function setCached<T>(key: string | undefined, value: T, ttlMs?: number) {
     expiresAt: Date.now() + (ttlMs ?? DEFAULT_TTL_MS),
     value
   });
+}
+
+function makeKeywordList(raw: string | undefined, fallback: string[]): string[] {
+  if (!raw) return fallback;
+  const parsed = raw
+    .split(",")
+    .map((entry) => entry.trim().toLowerCase())
+    .filter(Boolean);
+  return parsed.length ? parsed : fallback;
 }
 
 async function ateraRequest<T>(path: string, params: Record<string, string | number | boolean | undefined>) {
@@ -418,3 +431,10 @@ export async function getDashboardMetrics(now = new Date()): Promise<DashboardMe
     sampleOpenTickets: sortedOpen.slice(0, 8).map(mapTicketSummary)
   };
 }
+
+export const __testables = {
+  makeKeywordList,
+  isClosedStatus,
+  countPendingTickets,
+  buildStatusBreakdown
+};

@@ -22,7 +22,7 @@ export function TicketList({ title, tickets, emptyMessage }: TicketListProps) {
       <table className="ticket-table">
         <thead>
           <tr>
-            <th>#</th>
+            <th>tickets.ticket_id</th>
             <th>Title</th>
             <th>Customer</th>
             <th>Created</th>
@@ -41,9 +41,16 @@ export function TicketList({ title, tickets, emptyMessage }: TicketListProps) {
               : "-";
             const variant = (ticket.status ?? "").toLowerCase().includes("new") ? "new" : "open";
 
+            const ticketId = String(ticket.id);
+            const ticketUrl = `https://app.atera.com/new/ticket/${encodeURIComponent(ticketId)}`;
+
             return (
               <tr key={ticket.id}>
-                <td>{ticket.number ?? ticket.id}</td>
+                <td>
+                  <a className="ticket-link" href={ticketUrl} target="_blank" rel="noreferrer">
+                    {ticketId}
+                  </a>
+                </td>
                 <td>{ticket.title ?? "Untitled"}</td>
                 <td>{ticket.customer ?? "-"}</td>
                 <td>{created}</td>

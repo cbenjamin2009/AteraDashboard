@@ -1,27 +1,40 @@
 import type { LoaderFunctionArgs } from "@remix-run/node";
 import { json } from "@remix-run/node";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useLoaderData, useRevalidator } from "@remix-run/react";
 
 import MetricCard from "~/components/metric-card";
+import StatusBanner from "~/components/status-banner";
 import TicketList from "~/components/ticket-list";
 import type { DashboardMetrics } from "~/types/dashboard";
 import { getDashboardMetrics } from "~/utils/atera.server";
 
-const REFRESH_INTERVAL_MS = 60_000;
+type ClientConfig = {
+  refreshIntervalMs: number;
+  staleAfterMs: number;
+};
+
+const DEFAULT_CLIENT_CONFIG: ClientConfig = {
+  refreshIntervalMs: 60_000,
+  staleAfterMs: 300_000
+};
 
 type LoaderData =
-  | { ok: true; metrics: DashboardMetrics }
-  | { ok: false; error: string };
+  | { ok: true; metrics: DashboardMetrics; clientConfig: ClientConfig }
+  | { ok: false; error: string; clientConfig: ClientConfig };
 
 export async function loader({}: LoaderFunctionArgs) {
+  const refreshIntervalMs = Number(process.env.DASH_REFRESH_INTERVAL_MS ?? DEFAULT_CLIENT_CONFIG.refreshIntervalMs);
+  const staleAfterMs = Number(process.env.DASH_STALE_AFTER_MS ?? DEFAULT_CLIENT_CONFIG.staleAfterMs);
+  const clientConfig: ClientConfig = { refreshIntervalMs, staleAfterMs };
+
   try {
     const metrics = await getDashboardMetrics();
-    return json<LoaderData>({ ok: true, metrics });
+    return json<LoaderData>({ ok: true, metrics, clientConfig });
   } catch (error) {
     console.error(error);
     const message = error instanceof Error ? error.message : "Unknown error";
-    return json<LoaderData>({ ok: false, error: message }, { status: 500 });
+    return json<LoaderData>({ ok: false, error: message, clientConfig }, { status: 500 });
   }
 }
 
@@ -43,22 +56,28 @@ function formatDayLabel(isoDate: string) {
 export default function DashboardRoute() {
   const data = useLoaderData<typeof loader>();
   const revalidator = useRevalidator();
+  const [nowTs, setNowTs] = useState(() => Date.now());
+
+  useEffect(() => {
+    const timer = setInterval(() => setNowTs(Date.now()), 30_000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const handle = setInterval(() => {
       if (document.visibilityState === "visible") {
         revalidator.revalidate();
       }
-    }, REFRESH_INTERVAL_MS);
+    }, data.clientConfig.refreshIntervalMs);
     return () => clearInterval(handle);
-  }, [revalidator]);
+  }, [data.clientConfig.refreshIntervalMs, revalidator]);
 
   if (!data.ok) {
     return (
       <main>
         <div className="dashboard-shell">
           <header>
-            <h1>Atera Operations Dashboard</h1>
+            <h1>Rush IT Operations Dashboard</h1>
             <p>Could not load data from the Atera API.</p>
           </header>
           <section className="tickets-panel">
@@ -75,6 +94,34 @@ export default function DashboardRoute() {
   }
 
   const { metrics } = data;
+  const config = data.clientConfig;
+  const isRefreshing = revalidator.state !== "idle";
+  const isStale = nowTs - new Date(metrics.generatedAt).getTime() > config.staleAfterMs;
+  const staleMinutes = ((nowTs - new Date(metrics.generatedAt).getTime()) / 60000).toFixed(1);
+  const autoRefreshSeconds = Math.round(config.refreshIntervalMs / 1000);
+  const maxCustomerCount = Math.max(
+    ...metrics.newTicketsByCustomer.map((entry) => entry.count),
+    1
+  );
+  const maxStatusCount = Math.max(...metrics.statusBreakdown.map((entry) => entry.count), 1);
+  const maxTrendValue = Math.max(
+    ...metrics.trendSevenDay.map((point) => Math.max(point.opened, point.closed)),
+    1
+  );
+
+  const renderBar = (value: number, max: number) => (
+    <div className="bar-track">
+      <span className="bar-fill" style={{ width: `${Math.min(100, (value / max) * 100)}%` }} />
+    </div>
+  );
+
+  const renderMetricCell = (value: number) => (
+    <div className="table-metric">
+      <span>{value}</span>
+      {renderBar(value, maxTrendValue)}
+    </div>
+  );
+
   const refreshedAt = new Date(metrics.generatedAt).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -86,8 +133,18 @@ export default function DashboardRoute() {
       <div className="dashboard-shell">
         <header>
           <h1>Atera Operations Dashboard</h1>
-          <p>Live ticket KPIs refresh automatically every minute.</p>
+          <p>Live ticket KPIs refresh automatically every {autoRefreshSeconds} seconds.</p>
         </header>
+
+        <div className="banner-stack">
+          {isRefreshing ? <StatusBanner message="Refreshing latest data from Atera..." variant="info" /> : null}
+          {isStale ? (
+            <StatusBanner
+              message={`Live data is ${staleMinutes} minutes old. Check API connectivity if this persists.`}
+              variant="warning"
+            />
+          ) : null}
+        </div>
 
         <section className="metrics-grid">
           <MetricCard label="Open Tickets" value={metrics.openTotal} helper="Currently assigned" />
@@ -190,13 +247,13 @@ export default function DashboardRoute() {
               </thead>
               <tbody>
                 {metrics.trendSevenDay.map((point) => (
-                  <tr key={point.date}>
-                    <td>{formatDayLabel(point.date)}</td>
-                    <td>{point.opened}</td>
-                    <td>{point.closed}</td>
-                  </tr>
-                ))}
-              </tbody>
+              <tr key={point.date}>
+                <td>{formatDayLabel(point.date)}</td>
+                <td>{renderMetricCell(point.opened)}</td>
+                <td>{renderMetricCell(point.closed)}</td>
+              </tr>
+            ))}
+          </tbody>
             </table>
           )}
         </section>
@@ -206,11 +263,14 @@ export default function DashboardRoute() {
           {metrics.newTicketsByCustomer.length === 0 ? (
             <p>Only light ticket volume this week.</p>
           ) : (
-            <ul className="stat-list compact">
+            <ul className="stat-list compact metered">
               {metrics.newTicketsByCustomer.map((entry) => (
                 <li key={entry.customer}>
-                  <span>{entry.customer}</span>
-                  <strong>{entry.count}</strong>
+                  <div className="stat-row">
+                    <span>{entry.customer}</span>
+                    <strong>{entry.count}</strong>
+                  </div>
+                  {renderBar(entry.count, maxCustomerCount)}
                 </li>
               ))}
             </ul>
@@ -222,11 +282,14 @@ export default function DashboardRoute() {
           {metrics.statusBreakdown.length === 0 ? (
             <p>No active statuses to report.</p>
           ) : (
-            <ul className="stat-list compact">
+            <ul className="stat-list compact metered">
               {metrics.statusBreakdown.map((entry) => (
                 <li key={entry.status}>
-                  <span>{entry.status}</span>
-                  <strong>{entry.count}</strong>
+                  <div className="stat-row">
+                    <span>{entry.status}</span>
+                    <strong>{entry.count}</strong>
+                  </div>
+                  {renderBar(entry.count, maxStatusCount)}
                 </li>
               ))}
             </ul>
@@ -241,7 +304,7 @@ export default function DashboardRoute() {
 
         <div className="footer-meta">
           <span>Last synced: {refreshedAt}</span>
-          <span>Auto-refresh every 60s</span>
+          <span>Auto-refresh every {autoRefreshSeconds}s</span>
         </div>
       </div>
     </main>
