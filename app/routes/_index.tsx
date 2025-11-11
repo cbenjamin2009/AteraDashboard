@@ -19,6 +19,37 @@ const DEFAULT_CLIENT_CONFIG: ClientConfig = {
   staleAfterMs: 300_000
 };
 
+const METRIC_THRESHOLDS = {
+  openTotal: { direction: "low", warning: 10, danger: 15 },
+  openThisMonth: { direction: "low", warning: 8, danger: 12 },
+  newToday: { direction: "low", warning: 5, danger: 10 },
+  pendingTickets: { direction: "low", warning: 3, danger: 6 },
+  closedThisMonth: { direction: "high", warning: 8, danger: 5 },
+  averageOpenAgeHours: { direction: "low", warning: 24, danger: 48 },
+  slaRiskCount: { direction: "low", warning: 1, danger: 3 },
+  criticalAlertsOpen: { direction: "low", warning: 1, danger: 2 }
+} as const;
+
+type MetricKey = keyof typeof METRIC_THRESHOLDS;
+type StoplightAccent = "success" | "warning" | "danger" | "neutral";
+
+function getStoplightAccent(key: MetricKey, value: number | null | undefined): StoplightAccent {
+  const config = METRIC_THRESHOLDS[key];
+  if (!config || value === null || value === undefined || Number.isNaN(value)) {
+    return "neutral";
+  }
+
+  if (config.direction === "low") {
+    if (value >= config.danger) return "danger";
+    if (value >= config.warning) return "warning";
+    return "success";
+  }
+
+  if (value <= config.danger) return "danger";
+  if (value <= config.warning) return "warning";
+  return "success";
+}
+
 type LoaderData =
   | { ok: true; metrics: DashboardMetrics; clientConfig: ClientConfig }
   | { ok: false; error: string; clientConfig: ClientConfig };
@@ -122,6 +153,16 @@ export default function DashboardRoute() {
     </div>
   );
 
+  const openTotalAccent = getStoplightAccent("openTotal", metrics.openTotal);
+  const openThisMonthAccent = getStoplightAccent("openThisMonth", metrics.openThisMonth);
+  const newTodayAccent = getStoplightAccent("newToday", metrics.newToday);
+  const pendingAccent = getStoplightAccent("pendingTickets", metrics.pendingTickets);
+  const closedThisMonthAccent = getStoplightAccent("closedThisMonth", metrics.closedThisMonth);
+  const avgAgeAccent = getStoplightAccent("averageOpenAgeHours", metrics.averageOpenAgeHours);
+  const avgAgeDisplay = formatAverageAge(metrics.averageOpenAgeHours);
+  const slaRiskAccent = getStoplightAccent("slaRiskCount", metrics.slaRiskCount);
+  const criticalAlertAccent = getStoplightAccent("criticalAlertsOpen", metrics.criticalAlertsOpen);
+
   const refreshedAt = new Date(metrics.generatedAt).toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
@@ -136,6 +177,11 @@ export default function DashboardRoute() {
           <p>Live ticket KPIs refresh automatically every {autoRefreshSeconds} seconds.</p>
         </header>
 
+        <div className="meta-row">
+          <span>Last synced: {refreshedAt}</span>
+          <span>Auto-refresh every {autoRefreshSeconds}s</span>
+        </div>
+
         <div className="banner-stack">
           {isRefreshing ? <StatusBanner message="Refreshing latest data from Atera..." variant="info" /> : null}
           {isStale ? (
@@ -147,7 +193,7 @@ export default function DashboardRoute() {
         </div>
 
         <section className="metrics-grid">
-          <MetricCard label="Open Tickets" value={metrics.openTotal} helper="Currently assigned" />
+          <MetricCard label="Open Tickets" value={metrics.openTotal} helper="Currently assigned" accent={openTotalAccent} />
           <MetricCard
             label="Opened This Month"
             value={metrics.openThisMonth}
@@ -301,14 +347,13 @@ export default function DashboardRoute() {
           tickets={metrics.sampleOpenTickets}
           emptyMessage="No open tickets right now."
         />
-
-        <div className="footer-meta">
-          <span>Last synced: {refreshedAt}</span>
-          <span>Auto-refresh every {autoRefreshSeconds}s</span>
-        </div>
       </div>
     </main>
   );
 }
+
+
+
+
 
 

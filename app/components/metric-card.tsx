@@ -2,7 +2,7 @@ interface MetricCardProps {
   label: string;
   value: number | string;
   helper?: string;
-  accent?: "warning" | "success" | "neutral";
+  accent?: "warning" | "success" | "neutral" | "danger";
 }
 
 export function MetricCard({ label, value, helper, accent }: MetricCardProps) {

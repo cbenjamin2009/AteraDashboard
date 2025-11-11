@@ -1,0 +1,61 @@
+{
+  "generatedAt": "2025-01-01T12:00:00.000Z",
+  "openTotal": 12,
+  "openThisMonth": 7,
+  "newToday": 3,
+  "closedThisMonth": 5,
+  "pendingTickets": 2,
+  "averageOpenAgeHours": 18.5,
+  "slaRiskCount": 1,
+  "technicianLoad": [
+    { "technician": "Chris Benjamin", "count": 4 },
+    { "technician": "Alex Jordan", "count": 3 }
+  ],
+  "trendSevenDay": [
+    { "date": "2025-01-01T00:00:00.000Z", "opened": 3, "closed": 1 },
+    { "date": "2024-12-31T00:00:00.000Z", "opened": 2, "closed": 2 },
+    { "date": "2024-12-30T00:00:00.000Z", "opened": 1, "closed": 0 },
+    { "date": "2024-12-29T00:00:00.000Z", "opened": 0, "closed": 1 },
+    { "date": "2024-12-28T00:00:00.000Z", "opened": 3, "closed": 2 },
+    { "date": "2024-12-27T00:00:00.000Z", "opened": 2, "closed": 1 },
+    { "date": "2024-12-26T00:00:00.000Z", "opened": 1, "closed": 0 }
+  ],
+  "newTicketsByCustomer": [
+    { "customer": "Acme Corp", "count": 3 },
+    { "customer": "Wayne Tech", "count": 2 },
+    { "customer": "Stark Industries", "count": 1 }
+  ],
+  "statusBreakdown": [
+    { "status": "Open", "count": 6 },
+    { "status": "Pending", "count": 4 },
+    { "status": "In-progress", "count": 2 }
+  ],
+  "criticalAlertsOpen": 1,
+  "criticalAlertsSample": [
+    {
+      "id": 101,
+      "title": "Disk space critical",
+      "customer": "Acme Corp",
+      "device": "ACME-SQL",
+      "createdAt": "2025-01-01T10:00:00.000Z"
+    }
+  ],
+  "sampleOpenTickets": [
+    {
+      "id": 8366,
+      "number": "TCK-8366",
+      "title": "Printer offline",
+      "customer": "Acme Corp",
+      "status": "Open",
+      "createdAt": "2024-12-20T09:00:00.000Z"
+    },
+    {
+      "id": 9001,
+      "number": "TCK-9001",
+      "title": "VPN login failing",
+      "customer": "Wayne Tech",
+      "status": "Pending",
+      "createdAt": "2024-12-25T14:30:00.000Z"
+    }
+  ]
+}

@@ -5,12 +5,17 @@
   "description": "Local Remix dashboard for monitoring core Atera ticket KPIs.",
   "scripts": {
     "dev": "remix dev",
+    "dev:mock": "cross-env DASHBOARD_FIXTURE=fixtures/dashboard.sample.json remix dev",
     "build": "remix build",
     "start": "dotenv -e .env -- remix-serve ./build/index.js",
     "start:prod": "npm run build && npm run start",
+    "start:mock": "cross-env DASHBOARD_FIXTURE=fixtures/dashboard.sample.json npm run start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "check": "npm run typecheck && npm run test"
+    "check": "npm run typecheck && npm run test",
+    "cy:open": "cypress open",
+    "cy:run": "cypress run",
+    "test:e2e": "start-server-and-test dev:mock http://localhost:5173 cy:run"
   },
   "keywords": [],
   "author": "",
@@ -28,13 +33,19 @@
   },
   "devDependencies": {
     "@remix-run/dev": "^2.17.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^18.3.16",
     "@types/react-dom": "^18.3.7",
+    "cross-env": "^10.1.0",
+    "cypress": "^15.6.0",
     "dotenv-cli": "^11.0.0",
+    "jsdom": "^27.1.0",
     "patch-package": "^8.0.1",
+    "start-server-and-test": "^2.1.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.6.3",
     "vitest": "^2.0.5"
   }
 }
-

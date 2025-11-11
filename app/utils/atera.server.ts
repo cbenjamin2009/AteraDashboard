@@ -1,3 +1,6 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
+
 import { addDays, startOfDay, startOfMonth, subDays } from "date-fns";
 
 import type {
@@ -31,6 +34,8 @@ const DEFAULT_PENDING_STATUS_KEYWORDS = [
 
 const CLOSED_STATUS_KEYWORDS = makeKeywordList(process.env.DASH_CLOSED_KEYWORDS, DEFAULT_CLOSED_STATUS_KEYWORDS);
 const PENDING_STATUS_KEYWORDS = makeKeywordList(process.env.DASH_PENDING_KEYWORDS, DEFAULT_PENDING_STATUS_KEYWORDS);
+const DASHBOARD_FIXTURE = process.env.DASHBOARD_FIXTURE;
+let cachedFixtureMetrics: DashboardMetrics | null | undefined;
 
 interface TicketsPage<T> {
   items: T[];
@@ -104,6 +109,30 @@ function makeKeywordList(raw: string | undefined, fallback: string[]): string[] 
     .map((entry) => entry.trim().toLowerCase())
     .filter(Boolean);
   return parsed.length ? parsed : fallback;
+}
+
+async function loadFixtureMetrics(): Promise<DashboardMetrics | null> {
+  if (!DASHBOARD_FIXTURE) {
+    return null;
+  }
+
+  if (cachedFixtureMetrics !== undefined) {
+    return cachedFixtureMetrics;
+  }
+
+  const resolvedPath = path.isAbsolute(DASHBOARD_FIXTURE)
+    ? DASHBOARD_FIXTURE
+    : path.join(process.cwd(), DASHBOARD_FIXTURE);
+
+  try {
+    const raw = await readFile(resolvedPath, "utf-8");
+    cachedFixtureMetrics = JSON.parse(raw) as DashboardMetrics;
+    return cachedFixtureMetrics;
+  } catch (error) {
+    console.warn("Failed to load DASHBOARD_FIXTURE:", error);
+    cachedFixtureMetrics = null;
+    return null;
+  }
 }
 
 async function ateraRequest<T>(path: string, params: Record<string, string | number | boolean | undefined>) {
@@ -314,6 +343,11 @@ export async function getDashboardMetrics(now = new Date()): Promise<DashboardMe
   const monthStart = startOfMonth(now);
   const sevenDaysAgo = subDays(todayStart, 7);
   const thirtyDaysAgo = subDays(todayStart, 30);
+
+  const fixtureMetrics = await loadFixtureMetrics();
+  if (fixtureMetrics) {
+    return fixtureMetrics;
+  }
 
   const [allTickets, modifiedToday, modifiedThisMonth, openAlerts] = await Promise.all([
     fetchTicketsCollection(
