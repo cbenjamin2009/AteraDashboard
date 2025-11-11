@@ -54,6 +54,23 @@ header p {
   backdrop-filter: blur(6px);
   border: 1px solid rgba(148, 163, 184, 0.15);
   box-shadow: 0 20px 35px rgba(2, 6, 23, 0.4);
+  transition: background 0.3s ease;
+}
+
+.metric-card[data-accent="success"] {
+  background: rgba(22, 101, 52, 0.45);
+}
+
+.metric-card[data-accent="warning"] {
+  background: rgba(120, 53, 15, 0.45);
+}
+
+.metric-card[data-accent="danger"] {
+  background: rgba(153, 27, 27, 0.45);
+}
+
+.metric-card[data-accent="neutral"] {
+  background: rgba(15, 23, 42, 0.85);
 }
 
 .metric-card h3 {
