@@ -193,47 +193,53 @@ export default function DashboardRoute() {
         </div>
 
         <section className="metrics-grid">
-          <MetricCard label="Open Tickets" value={metrics.openTotal} helper="Currently assigned" accent={openTotalAccent} />
+          <MetricCard
+            label="Open Tickets"
+            value={metrics.openTotal}
+            helper="Currently assigned"
+            accent={openTotalAccent}
+          />
           <MetricCard
             label="Opened This Month"
             value={metrics.openThisMonth}
             helper="Still awaiting closure"
-            accent="warning"
+            accent={openThisMonthAccent}
           />
           <MetricCard
             label="New Tickets Today"
             value={metrics.newToday}
             helper="Created since midnight"
-            accent="success"
+            accent={newTodayAccent}
           />
           <MetricCard
             label="Pending Tickets"
             value={metrics.pendingTickets}
             helper="Waiting on external action"
-            accent="warning"
+            accent={pendingAccent}
           />
           <MetricCard
             label="Closed This Month"
             value={metrics.closedThisMonth}
             helper="Resolved + closed"
-            accent="neutral"
+            accent={closedThisMonthAccent}
           />
           <MetricCard
             label="Avg Age (30d)"
-            value={formatAverageAge(metrics.averageOpenAgeHours)}
+            value={avgAgeDisplay}
             helper="Active tickets opened within 30 days"
+            accent={avgAgeAccent}
           />
           <MetricCard
             label="SLA at Risk (+/- 4h)"
             value={metrics.slaRiskCount}
             helper="Due soon or just breached"
-            accent="warning"
+            accent={slaRiskAccent}
           />
           <MetricCard
             label="Critical Alerts"
             value={metrics.criticalAlertsOpen}
             helper="Open RMM alerts (critical)"
-            accent="warning"
+            accent={criticalAlertAccent}
           />
         </section>
 
@@ -351,6 +357,7 @@ export default function DashboardRoute() {
     </main>
   );
 }
+
 
 
 
