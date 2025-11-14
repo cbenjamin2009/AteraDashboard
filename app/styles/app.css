@@ -17,6 +17,67 @@ body {
   min-height: 100vh;
 }
 
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.site-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 4vw;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(2, 6, 23, 0.8);
+  backdrop-filter: blur(8px);
+}
+
+.site-header__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.site-header__title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.site-header__subtitle {
+  font-size: 0.85rem;
+  color: #94a3b8;
+}
+
+.site-nav {
+  display: flex;
+  gap: 1rem;
+}
+
+.nav-link {
+  color: #cbd5f5;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nav-link:hover {
+  background: rgba(59, 130, 246, 0.2);
+  color: #fff;
+}
+
+.nav-link.is-active {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.6), rgba(16, 185, 129, 0.5));
+  color: #fff;
+}
+
+.app-main {
+  flex: 1;
+}
+
 main {
   padding: 2.5rem 4vw 3rem;
 }
@@ -197,6 +258,58 @@ header p {
   gap: 1.5rem;
 }
 
+.month-filter {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.month-filter label {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+}
+
+.month-filter input[type="month"] {
+  background: rgba(15, 23, 42, 0.9);
+  color: #f3f4f6;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  border-radius: 0.5rem;
+  padding: 0.4rem 0.6rem;
+}
+
+.month-filter button {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.8), rgba(16, 185, 129, 0.7));
+  border: none;
+  border-radius: 0.5rem;
+  color: white;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+}
+
+.month-filter button:hover {
+  opacity: 0.9;
+}
+
+.month-filter__actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-ghost {
+  background: transparent;
+  border: 1px solid rgba(148, 163, 184, 0.5);
+  color: #cbd5f5;
+}
+
+.btn-ghost:hover {
+  background: rgba(148, 163, 184, 0.2);
+}
+
 .stat-list {
   list-style: none;
   margin: 0;
@@ -287,6 +400,23 @@ header p {
   height: 3px;
 }
 
+.table-scroll {
+  overflow-x: auto;
+}
+
+.keyword-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.keyword-pill {
+  background: rgba(59, 130, 246, 0.15);
+  border-radius: 999px;
+  padding: 0.3rem 0.8rem;
+  color: #e0e7ff;
+}
+
 .status-pill {
   display: inline-flex;
   padding: 0.2rem 0.6rem;
@@ -327,6 +457,31 @@ header p {
     overflow-x: auto;
   }
 }
+.table-pagination {
+  margin-top: 0.8rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
 
+.pagination-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
 
+.pagination-buttons button {
+  background: rgba(59, 130, 246, 0.2);
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  color: #e0f2fe;
+  border-radius: 0.5rem;
+  padding: 0.3rem 0.8rem;
+  cursor: pointer;
+}
 
+.pagination-buttons button[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

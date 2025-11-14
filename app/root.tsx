@@ -3,6 +3,7 @@ import {
   Links,
   LiveReload,
   Meta,
+  NavLink,
   Outlet,
   Scripts,
   ScrollRestoration
@@ -28,7 +29,34 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Outlet />
+        <div className="app-shell">
+          <header className="site-header">
+            <div className="site-header__brand">
+              <span className="site-header__title">Rush IT Ops</span>
+              <span className="site-header__subtitle">Atera Insights</span>
+            </div>
+            <nav className="site-nav">
+              <NavLink
+                to="/"
+                prefetch="intent"
+                className={({ isActive }) => (isActive ? "nav-link is-active" : "nav-link")}
+              >
+                Live Dashboard
+              </NavLink>
+              <NavLink
+                to="/monthly-review"
+                prefetch="intent"
+                className={({ isActive }) => (isActive ? "nav-link is-active" : "nav-link")}
+              >
+                Monthly Review
+              </NavLink>
+            </nav>
+          </header>
+
+          <main className="app-main">
+            <Outlet />
+          </main>
+        </div>
         <ScrollRestoration />
         <Scripts />
         <LiveReload />

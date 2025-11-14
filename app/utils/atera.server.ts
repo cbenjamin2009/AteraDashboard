@@ -12,6 +12,7 @@ import type {
   TicketSummary,
   TrendPoint
 } from "~/types/dashboard";
+import type { BillableEntry, MonthlyReviewMetrics, TicketRow } from "~/types/monthly-review";
 import { getServerEnv } from "./env.server";
 
 const API_BASE_URL = "https://app.atera.com/api/v3";
@@ -19,6 +20,7 @@ const PAGE_SIZE = 50;
 const MAX_PAGES = 40;
 const DEFAULT_TTL_MS = 30_000;
 const SLA_THRESHOLD_HOURS = 4;
+const MONTHLY_CACHE_TTL_MS = Number(process.env.MONTHLY_CACHE_TTL_MS ?? 12 * 60 * 60 * 1000);
 
 const DEFAULT_CLOSED_STATUS_KEYWORDS = ["closed", "resolved", "merged", "deleted", "spam", "cancelled"];
 const DEFAULT_PENDING_STATUS_KEYWORDS = [
@@ -36,6 +38,7 @@ const CLOSED_STATUS_KEYWORDS = makeKeywordList(process.env.DASH_CLOSED_KEYWORDS,
 const PENDING_STATUS_KEYWORDS = makeKeywordList(process.env.DASH_PENDING_KEYWORDS, DEFAULT_PENDING_STATUS_KEYWORDS);
 const DASHBOARD_FIXTURE = process.env.DASHBOARD_FIXTURE;
 let cachedFixtureMetrics: DashboardMetrics | null | undefined;
+const monthlyMetricsCache = new Map<string, { metrics: MonthlyReviewMetrics; expiresAt: number }>();
 
 interface TicketsPage<T> {
   items: T[];
@@ -55,6 +58,9 @@ interface TicketRecord {
   FirstResponseDueDate?: string;
   ClosedTicketDueDate?: string;
   TechnicianFullName?: string;
+  TechnicianFirstCommentDate?: string;
+  CustomerSurveyRate?: number;
+  TotalDurationMinutes?: number;
 }
 
 interface AlertRecord {
@@ -81,6 +87,14 @@ interface TicketsCollection {
 interface AlertsCollection {
   items: AlertRecord[];
   totalItemCount: number;
+}
+
+interface WorkHoursRecord {
+  WorkHoursRecordID: number;
+  TechnicianFullName?: string;
+  BillableDurationMinutes?: number;
+  DurationMinutes?: number;
+  Billable?: boolean;
 }
 
 const memoryCache = new Map<string, { expiresAt: number; value: unknown }>();
@@ -229,6 +243,15 @@ async function fetchAlertsCollection(
   return collection;
 }
 
+async function fetchWorkHoursRecords(ticketId: number): Promise<WorkHoursRecord[]> {
+  try {
+    return await ateraRequest<WorkHoursRecord[]>(`/tickets/${ticketId}/workhoursrecords`, {});
+  } catch (error) {
+    console.warn(`Failed to load work hours for ticket ${ticketId}`, error);
+    return [];
+  }
+}
+
 function mapTicketSummary(ticket: TicketRecord): TicketSummary {
   return {
     id: ticket.TicketID,
@@ -336,6 +359,202 @@ function countPendingTickets(tickets: TicketRecord[]): number {
     if (!status) return false;
     return PENDING_STATUS_KEYWORDS.some((keyword) => status.includes(keyword));
   }).length;
+}
+
+const MONTH_FORMATTER = new Intl.DateTimeFormat("en-US", { month: "long", year: "numeric" });
+const KEYWORD_STOPWORDS = new Set(["the", "a", "of", "for", "and", "to", "in", "on", "with", "issue", "ticket"]);
+
+function resolveMonthRange(monthIso: string) {
+  const [yearStr, monthStr] = monthIso.split("-");
+  const year = Number(yearStr);
+  const month = Number(monthStr) - 1;
+  const startDate = new Date(Date.UTC(year, month, 1, 0, 0, 0));
+  const endDate = new Date(Date.UTC(year, month + 1, 1, 0, 0, 0));
+  const monthLabel = MONTH_FORMATTER.format(startDate);
+  return { startDate, endDate, monthLabel };
+}
+
+function minutesBetween(start?: string, end?: string) {
+  const startDate = parseDate(start);
+  const endDate = parseDate(end);
+  if (!startDate || !endDate) return null;
+  const diff = (endDate.getTime() - startDate.getTime()) / 60000;
+  return diff >= 0 ? diff : null;
+}
+
+function buildKeywordCloudFromTickets(tickets: TicketRecord[]) {
+  const counts = new Map<string, number>();
+  for (const ticket of tickets) {
+    const title = ticket.TicketTitle ?? "";
+    title
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, "")
+      .split(/\s+/)
+      .filter((word) => word && !KEYWORD_STOPWORDS.has(word))
+      .forEach((word) => {
+        counts.set(word, (counts.get(word) ?? 0) + 1);
+      });
+  }
+
+  return Array.from(counts.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 15);
+}
+
+async function aggregateBillableHours(tickets: TicketRecord[]) {
+  const technicianMap = new Map<string, number>();
+  let totalMinutes = 0;
+
+  for (const ticket of tickets) {
+    const records = await fetchWorkHoursRecords(ticket.TicketID);
+    for (const entry of records) {
+      const minutes =
+        entry.BillableDurationMinutes ??
+        (entry.Billable ? entry.DurationMinutes ?? 0 : 0);
+      if (!minutes) continue;
+      totalMinutes += minutes;
+      const technician = entry.TechnicianFullName ?? "Unassigned";
+      technicianMap.set(technician, (technicianMap.get(technician) ?? 0) + minutes);
+    }
+  }
+
+  const entries: BillableEntry[] = Array.from(technicianMap.entries()).map(([technician, minutes]) => ({
+    technician,
+    hours: Number((minutes / 60).toFixed(1))
+  }));
+
+  return {
+    totalHours: Number((totalMinutes / 60).toFixed(1)),
+    entries: entries.sort((a, b) => b.hours - a.hours)
+  };
+}
+
+export async function getMonthlyReviewMetrics(monthIso: string): Promise<MonthlyReviewMetrics> {
+  const { startDate, endDate, monthLabel } = resolveMonthRange(monthIso);
+  const { items } = await fetchTicketsCollection(
+    "/tickets/lastmodified",
+    { date: startDate.toISOString(), includeComments: false },
+    {
+      cacheKey: `tickets:monthly:${startDate.toISOString()}`,
+      ttlMs: DEFAULT_TTL_MS * 5,
+      maxPages: 50
+    }
+  );
+
+  const monthlyTickets = items.filter((ticket) => {
+    const created = parseDate(ticket.TicketCreatedDate);
+    return created && created >= startDate && created < endDate;
+  });
+
+  const totalTickets = monthlyTickets.length;
+
+  const firstResponses = monthlyTickets
+    .map((ticket) => minutesBetween(ticket.TicketCreatedDate, ticket.TechnicianFirstCommentDate))
+    .filter((value): value is number => typeof value === "number");
+
+  const resolutions = monthlyTickets
+    .map((ticket) => minutesBetween(ticket.TicketCreatedDate, ticket.TicketResolvedDate))
+    .filter((value): value is number => typeof value === "number");
+
+  const avgFirstResponseMinutes = firstResponses.length
+    ? Number((firstResponses.reduce((acc, val) => acc + val, 0) / firstResponses.length).toFixed(1))
+    : 0;
+
+  const avgResolutionMinutes = resolutions.length
+    ? Number((resolutions.reduce((acc, val) => acc + val, 0) / resolutions.length).toFixed(1))
+    : 0;
+
+  const satisfactionValues = monthlyTickets
+    .map((ticket) => (typeof ticket.CustomerSurveyRate === "number" ? ticket.CustomerSurveyRate : null))
+    .filter((value): value is number => value !== null);
+
+  const satisfactionScore = satisfactionValues.length
+    ? Number((satisfactionValues.reduce((acc, val) => acc + val, 0) / satisfactionValues.length).toFixed(1))
+    : 0;
+
+  const responseWithinTwoHoursCount = firstResponses.filter((minutes) => minutes <= 120).length;
+  const closureWithinTwoDaysCount = resolutions.filter((minutes) => minutes <= 2880).length;
+
+  const responseWithin2Hours = {
+    count: responseWithinTwoHoursCount,
+    percentage: totalTickets ? Number(((responseWithinTwoHoursCount / totalTickets) * 100).toFixed(1)) : 0
+  };
+
+  const closureWithinTwoDays = {
+    count: closureWithinTwoDaysCount,
+    percentage: totalTickets ? Number(((closureWithinTwoDaysCount / totalTickets) * 100).toFixed(1)) : 0
+  };
+
+  const billableHours = await aggregateBillableHours(monthlyTickets);
+  const keywordCloud = buildKeywordCloudFromTickets(monthlyTickets);
+
+  const tickets: TicketRow[] = monthlyTickets.map((ticket) => ({
+    id: ticket.TicketID,
+    number: ticket.TicketNumber,
+    title: ticket.TicketTitle,
+    customer: ticket.CustomerName,
+    status: ticket.TicketStatus,
+    opened: ticket.TicketCreatedDate,
+    firstResponseMinutes: minutesBetween(ticket.TicketCreatedDate, ticket.TechnicianFirstCommentDate) ?? undefined,
+    resolutionMinutes: minutesBetween(ticket.TicketCreatedDate, ticket.TicketResolvedDate) ?? undefined,
+    satisfaction: typeof ticket.CustomerSurveyRate === "number" ? ticket.CustomerSurveyRate : undefined
+  }));
+
+  return {
+    monthLabel,
+    totalTickets,
+    avgFirstResponseMinutes,
+    avgResolutionMinutes,
+    satisfactionScore,
+    responseWithin2Hours,
+    closureWithinTwoDays,
+    billableHours,
+    keywordCloud,
+    tickets
+  };
+}
+
+interface MonthlyMetricsOptions {
+  fixturePath?: string;
+  forceRefresh?: boolean;
+}
+
+export async function fetchMonthlyReviewMetrics(
+  monthIso: string,
+  options: MonthlyMetricsOptions = {}
+): Promise<MonthlyReviewMetrics | null> {
+  const cacheKey = `monthly:${monthIso}`;
+  if (!options.forceRefresh) {
+    const cached = monthlyMetricsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.metrics;
+    }
+  }
+
+  try {
+    const metrics = await getMonthlyReviewMetrics(monthIso);
+    monthlyMetricsCache.set(cacheKey, {
+      metrics,
+      expiresAt: Date.now() + MONTHLY_CACHE_TTL_MS
+    });
+    return metrics;
+  } catch (error) {
+    console.error("Failed to load monthly review metrics from API", error);
+    if (!options.fixturePath) {
+      monthlyMetricsCache.delete(cacheKey);
+      return null;
+    }
+    const { loadJsonFixture } = await import("./fixture.server");
+    const fallback = await loadJsonFixture<MonthlyReviewMetrics>(options.fixturePath);
+    if (fallback) {
+      monthlyMetricsCache.set(cacheKey, {
+        metrics: fallback,
+        expiresAt: Date.now() + MONTHLY_CACHE_TTL_MS
+      });
+    }
+    return fallback;
+  }
 }
 
 export async function getDashboardMetrics(now = new Date()): Promise<DashboardMetrics> {

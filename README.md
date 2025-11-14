@@ -5,11 +5,12 @@ A local-first Remix dashboard tailored for wall displays and NOC TVs. It surface
 ## Features
 
 - Server-side loaders keep your `ATERA_API_KEY` off the client.
-- KPI cards cover open totals, opened/closed this month, new today, pending queue, average open age (30d), SLA-at-risk counts, and live critical alert totals.
+- KPI cards cover open totals, opened/closed this month, new today, pending queue, average open age (30d), SLA-at-risk counts, live critical alerts, plus a dedicated Monthly Review tab for historical analysis.
 - Technician workload list, status breakdown, 7-day opened vs closed trend (with spark bars), customer volume leaderboard, and the oldest-open ticket table keep priorities obvious.
-- Auto-refresh interval, stale-data warning, and closed/pending keyword lists are configurable via `.env`.
+- Auto-refresh interval, stale-data warning, closed/pending keyword lists, and optional fixtures are configurable via `.env`.
 - Status banners surface refresh progress or stale data so you know when the API is unhappy.
 - Zero external services—run and host anywhere Node 18+ is available.
+- Dedicated Monthly Review tab summarizes historical stats (totals, SLA performance, billable hours, keyword trends, full ticket table).
 
 ## Screenshot
 <img width="600" height="300" alt="image" src="https://github.com/user-attachments/assets/04d1a72b-9cff-4a0e-9337-91ee41c4bc7a" />
@@ -51,7 +52,7 @@ npm run start:mock    # Builds + serves the mocked data set
   - `ATERA_API_KEY` *(required)* – your tenant key.
   - `DASH_REFRESH_INTERVAL_MS` – client auto-refresh cadence (default `60000`).
   - `DASH_STALE_AFTER_MS` – when to banner stale data (default `300000`).
-  - `DASH_PENDING_KEYWORDS` / `DASH_CLOSED_KEYWORDS` – comma lists that control which ticket statuses roll into the pending and open buckets.
+  - DASH_PENDING_KEYWORDS / DASH_CLOSED_KEYWORDS – comma lists that control which ticket statuses roll into the pending and open buckets.\n  - DASHBOARD_FIXTURE – optional JSON file for the live dashboard when you don't want to hit the API.\n  - MONTHLY_REVIEW_FIXTURE – optional JSON file for the Monthly Review page (default points at fixtures/monthly-review.sample.json).
   - `DASHBOARD_FIXTURE` – optional JSON file; when set, the dashboard loads data from the file instead of calling the Atera API (used for tests/e2e demos).
 - **Caching**: `app/utils/atera.server.ts` includes a small memory cache (30s TTL) to shield the API from rapid refreshes. Adjust the constants there if you need faster/slower polling or higher page limits.
 - **Deployment helpers**: Use the included `Procfile` on Heroku-style hosts or point PM2/systemd at `npm run start:prod`.
@@ -76,3 +77,7 @@ Vitest covers utility logic and UI components, while Cypress drives the dashboar
 - Expand the layout with other Atera datasets such as agents, automation jobs, or patch posture.
 
 Feel free to tailor the styling in `app/styles/app.css` to match your office branding.
+
+
+
+

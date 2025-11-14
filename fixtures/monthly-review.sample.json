@@ -1,0 +1,60 @@
+{
+  "monthLabel": "January 2025",
+  "totalTickets": 128,
+  "avgFirstResponseMinutes": 42,
+  "avgResolutionMinutes": 640,
+  "satisfactionScore": 4.7,
+  "responseWithin2Hours": { "count": 112, "percentage": 87.5 },
+  "closureWithinTwoDays": { "count": 94, "percentage": 73.4 },
+  "billableHours": {
+    "totalHours": 148.5,
+    "entries": [
+      { "technician": "Chris Benjamin", "hours": 52.0 },
+      { "technician": "Alex Jordan", "hours": 41.5 },
+      { "technician": "Maya Patel", "hours": 32.0 },
+      { "technician": "Dev Ops Team", "hours": 23.0 }
+    ]
+  },
+  "keywordCloud": [
+    { "label": "printer", "count": 18 },
+    { "label": "vpn", "count": 12 },
+    { "label": "sharepoint", "count": 9 },
+    { "label": "password", "count": 7 },
+    { "label": "slow", "count": 6 }
+  ],
+  "tickets": [
+    {
+      "id": 8366,
+      "number": "TCK-8366",
+      "title": "Printer offline",
+      "customer": "Acme Corp",
+      "status": "Closed",
+      "opened": "2025-01-05T09:21:00.000Z",
+      "firstResponseMinutes": 28,
+      "resolutionMinutes": 360,
+      "satisfaction": 5
+    },
+    {
+      "id": 9001,
+      "number": "TCK-9001",
+      "title": "VPN login failing",
+      "customer": "Wayne Tech",
+      "status": "Closed",
+      "opened": "2025-01-08T14:02:00.000Z",
+      "firstResponseMinutes": 42,
+      "resolutionMinutes": 720,
+      "satisfaction": 4
+    },
+    {
+      "id": 9023,
+      "number": "TCK-9023",
+      "title": "SharePoint permissions reset",
+      "customer": "Stark Industries",
+      "status": "In Progress",
+      "opened": "2025-01-15T12:30:00.000Z",
+      "firstResponseMinutes": 15,
+      "resolutionMinutes": 0,
+      "satisfaction": null
+    }
+  ]
+}

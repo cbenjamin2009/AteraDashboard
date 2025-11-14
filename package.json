@@ -5,11 +5,11 @@
   "description": "Local Remix dashboard for monitoring core Atera ticket KPIs.",
   "scripts": {
     "dev": "remix dev",
-    "dev:mock": "cross-env DASHBOARD_FIXTURE=fixtures/dashboard.sample.json remix dev",
+    "dev:mock": "cross-env DASHBOARD_FIXTURE=fixtures/dashboard.sample.json MONTHLY_REVIEW_FIXTURE=fixtures/monthly-review.sample.json remix dev",
     "build": "remix build",
     "start": "dotenv -e .env -- remix-serve ./build/index.js",
     "start:prod": "npm run build && npm run start",
-    "start:mock": "cross-env DASHBOARD_FIXTURE=fixtures/dashboard.sample.json npm run start",
+    "start:mock": "cross-env DASHBOARD_FIXTURE=fixtures/dashboard.sample.json MONTHLY_REVIEW_FIXTURE=fixtures/monthly-review.sample.json npm run start",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "check": "npm run typecheck && npm run test",
