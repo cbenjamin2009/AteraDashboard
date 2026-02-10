@@ -1,0 +1,10 @@
+node_modules
+build
+.git
+.env
+npm-debug.log
+Dockerfile
+docker-compose.yml
+README.md
+cypress
+*.md
