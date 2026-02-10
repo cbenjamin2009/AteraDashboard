@@ -1,6 +1,8 @@
 FROM node:18-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
+# Skip Cypress binary download during container build.
+ENV CYPRESS_INSTALL_BINARY=0
 RUN npm ci
 
 FROM node:18-alpine AS build
